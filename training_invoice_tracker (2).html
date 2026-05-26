@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Training Invoice Tracker</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#f5f5f5;color:#1a1a1a;padding:24px;min-height:100vh}
+h1{font-size:20px;font-weight:600;color:#1a1a1a}
+.header{margin-bottom:1.5rem;padding-bottom:1rem;border-bottom:1px solid #e0e0e0}
+.header p{font-size:13px;color:#666;margin-top:4px}
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:1.5rem}
+.metric{background:#fff;border-radius:8px;padding:1rem;border:1px solid #e8e8e8}
+.metric-label{font-size:12px;color:#888;margin-bottom:6px}
+.metric-value{font-size:22px;font-weight:600;color:#1a1a1a}
+.metric-value.green{color:#107c10}
+.metric-value.amber{color:#b46200}
+.metric-value.blue{color:#0078d4}
+.top-bar{display:flex;align-items:center;gap:10px;margin-bottom:1.25rem;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:4px;font-size:14px;cursor:pointer;font-family:inherit;border:1px solid #ccc;background:#fff;color:#1a1a1a}
+.btn:hover{background:#f0f0f0}
+.btn-primary{background:#0078d4;border-color:#0078d4;color:#fff}
+.btn-primary:hover{background:#106ebe}
+.export-btn{margin-left:auto}
+.table-wrap{background:#fff;border:1px solid #e0e0e0;border-radius:8px;overflow:hidden}
+table{width:100%;border-collapse:collapse;font-size:13px;table-layout:fixed}
+th{background:#f8f8f8;color:#555;font-weight:600;padding:10px 14px;text-align:left;border-bottom:1px solid #e0e0e0;font-size:12px;text-transform:uppercase;letter-spacing:0.03em}
+td{padding:10px 14px;border-bottom:1px solid #f0f0f0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#f9f9f9}
+.badge{display:inline-block;padding:2px 10px;border-radius:20px;font-size:12px;font-weight:500}
+.badge-pending{background:#fff4ce;color:#7a4f00}
+.badge-approved{background:#dff6dd;color:#0d6b0d}
+.badge-rejected{background:#fde7e9;color:#a4262c}
+.badge-reimbursed{background:#e6f4ea;color:#0f6e56}
+.participant-chip{display:inline-flex;align-items:center;gap:4px;background:#f0f6ff;color:#0c447c;border-radius:20px;padding:2px 8px;font-size:11px;font-weight:500;margin:2px 2px 2px 0;white-space:nowrap}
+.participant-chip .dept{color:#185fa5;opacity:0.7;font-weight:400}
+.participants-cell{white-space:normal;line-height:1.6}
+.col-provider{width:13%}.col-course{width:17%}.col-date{width:10%}.col-submitted{width:10%}.col-amount{width:9%}.col-participants{width:24%}.col-status{width:11%}.col-actions{width:6%}
+.del-btn{background:none;border:none;cursor:pointer;color:#888;padding:4px;border-radius:4px;font-size:15px}
+.del-btn:hover{color:#c4314b;background:#fde7e9}
+.status-select{border:1px solid #ddd;background:#fff;font-size:12px;cursor:pointer;padding:3px 6px;border-radius:4px;color:#555;font-family:inherit}
+.empty-state{padding:3rem;text-align:center;color:#888;font-size:14px}
+.empty-state i{font-size:32px;display:block;margin:0 auto 10px;color:#ccc}
+
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:200;align-items:center;justify-content:center}
+.overlay.open{display:flex}
+.modal{background:#fff;border-radius:8px;border:1px solid #ddd;padding:1.5rem;width:500px;max-width:96vw;max-height:92vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,0.18)}
+.modal h2{font-size:16px;font-weight:600;margin-bottom:1.25rem;color:#1a1a1a}
+.ai-badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:2px 8px;background:#deecf9;color:#0078d4;border-radius:20px;margin-left:6px;vertical-align:middle;font-weight:500}
+.section-label{font-size:12px;font-weight:600;color:#444;text-transform:uppercase;letter-spacing:0.04em;margin:1.25rem 0 0.75rem;padding-bottom:6px;border-bottom:1px solid #f0f0f0}
+.form-group{margin-bottom:1rem}
+.form-group label{display:block;font-size:13px;color:#555;margin-bottom:5px;font-weight:500}
+.form-group input,.form-group select{width:100%;padding:8px 10px;border:1px solid #ccc;border-radius:4px;background:#fff;color:#1a1a1a;font-size:14px;font-family:inherit}
+.form-group input:focus,.form-group select:focus{outline:none;border-color:#0078d4;box-shadow:0 0 0 2px rgba(0,120,212,0.15)}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.modal-btns{display:flex;gap:10px;margin-top:1.25rem;justify-content:flex-end}
+.btn-cancel{background:#fff;border:1px solid #ccc;color:#555;padding:8px 18px;border-radius:4px;font-size:14px;cursor:pointer;font-family:inherit}
+.btn-cancel:hover{background:#f0f0f0}
+.btn-save{background:#0078d4;border:none;color:#fff;padding:8px 18px;border-radius:4px;font-size:14px;cursor:pointer;font-family:inherit}
+.btn-save:hover{background:#106ebe}
+
+/* Participant builder */
+.participant-builder{border:1px solid #e0e0e0;border-radius:6px;padding:12px;background:#fafafa}
+.participant-add-row{display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end;margin-bottom:10px}
+.participant-add-row input{padding:7px 10px;border:1px solid #ccc;border-radius:4px;font-size:13px;font-family:inherit;background:#fff}
+.participant-add-row input:focus{outline:none;border-color:#0078d4}
+.add-p-btn{padding:7px 12px;border-radius:4px;background:#0078d4;color:#fff;border:none;cursor:pointer;font-size:13px;white-space:nowrap;font-family:inherit}
+.add-p-btn:hover{background:#106ebe}
+.participants-list{display:flex;flex-wrap:wrap;gap:6px;min-height:32px}
+.p-chip{display:inline-flex;align-items:center;gap:6px;background:#e8f0fe;color:#0c447c;border-radius:20px;padding:4px 10px;font-size:12px;font-weight:500}
+.p-chip .dept-tag{color:#185fa5;opacity:0.75;font-weight:400}
+.p-chip-remove{background:none;border:none;cursor:pointer;color:#0c447c;opacity:0.6;padding:0;font-size:14px;line-height:1;display:flex;align-items:center}
+.p-chip-remove:hover{opacity:1}
+.p-empty{font-size:12px;color:#aaa;font-style:italic;padding:6px 0}
+
+.upload-zone{border:2px dashed #c8c8c8;border-radius:8px;padding:2rem;text-align:center;cursor:pointer;margin-bottom:1.25rem;transition:background 0.15s,border-color 0.15s}
+.upload-zone:hover,.upload-zone.drag{background:#f0f7ff;border-color:#0078d4}
+.upload-zone input{display:none}
+.upload-zone p{font-size:14px;color:#555;margin-top:8px}
+.upload-zone small{font-size:12px;color:#999}
+.upload-icon{font-size:36px;color:#0078d4}
+.ai-status{display:flex;align-items:center;gap:10px;padding:10px 14px;background:#f0f7ff;border-radius:6px;margin-bottom:1rem;font-size:13px;color:#0078d4;border:1px solid #deecf9}
+.spinner{width:16px;height:16px;border:2px solid #deecf9;border-top-color:#0078d4;border-radius:50%;animation:spin 0.7s linear infinite;flex-shrink:0}
+@keyframes spin{to{transform:rotate(360deg)}}
+.preview-img{max-width:100%;max-height:140px;border-radius:6px;border:1px solid #e0e0e0;margin-bottom:1rem;display:block}
+
+@media(max-width:640px){
+  .metrics{grid-template-columns:1fr 1fr}
+  body{padding:16px}
+  .export-btn{margin-left:0}
+  .participant-add-row{grid-template-columns:1fr 1fr;grid-template-rows:auto auto}
+  .participant-add-row .add-p-btn{grid-column:1/-1}
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1><i class="ti ti-file-invoice" style="font-size:20px;vertical-align:-3px;margin-right:8px;color:#0078d4"></i>Training Invoice Tracker</h1>
+  <p>Upload invoices — AI extracts details automatically. Track claims and participants per training.</p>
+</div>
+
+<div class="metrics">
+  <div class="metric"><div class="metric-label">Total submitted</div><div class="metric-value" id="m-total">S$0.00</div></div>
+  <div class="metric"><div class="metric-label">Pending</div><div class="metric-value amber" id="m-pending">0</div></div>
+  <div class="metric"><div class="metric-label">Approved</div><div class="metric-value blue" id="m-approved">0</div></div>
+  <div class="metric"><div class="metric-label">Reimbursed</div><div class="metric-value green" id="m-reimbursed">S$0.00</div></div>
+</div>
+
+<div class="top-bar">
+  <button class="btn btn-primary" onclick="openUpload()"><i class="ti ti-upload"></i> Upload invoice</button>
+  <button class="btn" onclick="openManual()"><i class="ti ti-plus"></i> Add manually</button>
+  <button class="btn export-btn" onclick="exportCSV()"><i class="ti ti-download"></i> Export CSV</button>
+</div>
+
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th class="col-provider">Provider</th>
+        <th class="col-course">Course</th>
+        <th class="col-date">Invoice date</th>
+        <th class="col-submitted">Submitted</th>
+        <th class="col-amount">Amount</th>
+        <th class="col-participants">Participants</th>
+        <th class="col-status">Status</th>
+        <th class="col-actions"></th>
+      </tr>
+    </thead>
+    <tbody id="invoice-body"></tbody>
+  </table>
+</div>
+
+<!-- Upload modal -->
+<div class="overlay" id="upload-modal">
+  <div class="modal">
+    <h2><i class="ti ti-upload" style="margin-right:6px;color:#0078d4"></i>Upload invoice <span class="ai-badge"><i class="ti ti-sparkles"></i> AI-powered</span></h2>
+    <div class="upload-zone" id="drop-zone" onclick="document.getElementById('file-input').click()">
+      <input type="file" id="file-input" accept=".pdf,image/*" onchange="handleFile(this.files[0])">
+      <i class="ti ti-cloud-upload upload-icon"></i>
+      <p>Click or drag & drop your invoice here</p>
+      <small>Supports PDF, JPG, PNG</small>
+    </div>
+    <img id="preview-img" class="preview-img" style="display:none" alt="Invoice preview">
+    <div class="ai-status" id="ai-status" style="display:none">
+      <div class="spinner"></div>
+      <span id="ai-status-text">Reading invoice with AI…</span>
+    </div>
+    <div id="upload-form" style="display:none">
+      <div class="section-label">Invoice details</div>
+      <div class="form-group"><label>Training provider</label><input type="text" id="u-provider" placeholder="e.g. Coursera"></div>
+      <div class="form-group"><label>Course / training name</label><input type="text" id="u-course" placeholder="e.g. PMP Certification Prep"></div>
+      <div class="form-row">
+        <div class="form-group"><label>Invoice date</label><input type="date" id="u-invdate"></div>
+        <div class="form-group"><label>Date submitted to Finance</label><input type="date" id="u-subdate"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Amount (SGD)</label><input type="number" id="u-amount" placeholder="0.00" min="0" step="0.01"></div>
+        <div class="form-group"><label>Status</label>
+          <select id="u-status">
+            <option value="pending">Pending</option>
+            <option value="approved">Approved</option>
+            <option value="reimbursed">Reimbursed</option>
+            <option value="rejected">Rejected</option>
+          </select>
+        </div>
+      </div>
+      <div class="section-label">Participants</div>
+      <div class="participant-builder">
+        <div class="participant-add-row">
+          <input type="text" id="u-pname" placeholder="Full name" onkeydown="if(event.key==='Enter'){event.preventDefault();addParticipant('u')}">
+          <input type="text" id="u-pdept" placeholder="Department" onkeydown="if(event.key==='Enter'){event.preventDefault();addParticipant('u')}">
+          <button class="add-p-btn" onclick="addParticipant('u')"><i class="ti ti-plus"></i> Add</button>
+        </div>
+        <div class="participants-list" id="u-plist"><span class="p-empty">No participants added yet</span></div>
+      </div>
+    </div>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeUpload()">Cancel</button>
+      <button class="btn-save" id="upload-save-btn" style="display:none" onclick="saveUpload()">Save invoice</button>
+    </div>
+  </div>
+</div>
+
+<!-- Manual modal -->
+<div class="overlay" id="manual-modal">
+  <div class="modal">
+    <h2><i class="ti ti-plus" style="margin-right:6px;color:#0078d4"></i>Add invoice manually</h2>
+    <div class="section-label">Invoice details</div>
+    <div class="form-group"><label>Training provider</label><input type="text" id="mm-provider" placeholder="e.g. Coursera"></div>
+    <div class="form-group"><label>Course / training name</label><input type="text" id="mm-course" placeholder="e.g. PMP Certification Prep"></div>
+    <div class="form-row">
+      <div class="form-group"><label>Invoice date</label><input type="date" id="mm-invdate"></div>
+      <div class="form-group"><label>Date submitted to Finance</label><input type="date" id="mm-subdate"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Amount (SGD)</label><input type="number" id="mm-amount" placeholder="0.00" min="0" step="0.01"></div>
+      <div class="form-group"><label>Status</label>
+        <select id="mm-status">
+          <option value="pending">Pending</option>
+          <option value="approved">Approved</option>
+          <option value="reimbursed">Reimbursed</option>
+          <option value="rejected">Rejected</option>
+        </select>
+      </div>
+    </div>
+    <div class="section-label">Participants</div>
+    <div class="participant-builder">
+      <div class="participant-add-row">
+        <input type="text" id="mm-pname" placeholder="Full name" onkeydown="if(event.key==='Enter'){event.preventDefault();addParticipant('mm')}">
+        <input type="text" id="mm-pdept" placeholder="Department" onkeydown="if(event.key==='Enter'){event.preventDefault();addParticipant('mm')}">
+        <button class="add-p-btn" onclick="addParticipant('mm')"><i class="ti ti-plus"></i> Add</button>
+      </div>
+      <div class="participants-list" id="mm-plist"><span class="p-empty">No participants added yet</span></div>
+    </div>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeManual()">Cancel</button>
+      <button class="btn-save" onclick="saveManual()">Save invoice</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let invoices = [];
+try { invoices = JSON.parse(localStorage.getItem('ti_sp_v3') || '[]'); } catch(e){}
+
+const tempParticipants = {u:[], mm:[]};
+const statusLabels = {pending:'Pending',approved:'Approved',rejected:'Rejected',reimbursed:'Reimbursed'};
+const statusClass = {pending:'badge-pending',approved:'badge-approved',rejected:'badge-rejected',reimbursed:'badge-reimbursed'};
+
+function persist(){ try{ localStorage.setItem('ti_sp_v3', JSON.stringify(invoices)); }catch(e){} }
+function fmt(n){ return 'S$'+Number(n).toLocaleString('en-SG',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function fmtDate(d){ if(!d) return '—'; const p=d.split('-'); return p[2]+'/'+p[1]+'/'+p[0]; }
+function today(){ return new Date().toISOString().split('T')[0]; }
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function updateMetrics(){
+  const total=invoices.reduce((s,i)=>s+Number(i.amount||0),0);
+  document.getElementById('m-total').textContent=fmt(total);
+  document.getElementById('m-pending').textContent=invoices.filter(i=>i.status==='pending').length;
+  document.getElementById('m-approved').textContent=invoices.filter(i=>i.status==='approved').length;
+  const reimb=invoices.filter(i=>i.status==='reimbursed').reduce((s,i)=>s+Number(i.amount||0),0);
+  document.getElementById('m-reimbursed').textContent=fmt(reimb);
+}
+
+function renderParticipantChips(participants){
+  if(!participants||!participants.length) return '<span style="color:#aaa;font-size:12px;font-style:italic">—</span>';
+  return participants.map(p=>`<span class="participant-chip">${esc(p.name)}<span class="dept">${esc(p.dept)}</span></span>`).join('');
+}
+
+function render(){
+  const tbody=document.getElementById('invoice-body');
+  if(!invoices.length){
+    tbody.innerHTML='<tr><td colspan="8" class="empty-state"><i class="ti ti-inbox"></i>No invoices yet — upload or add your first one.</td></tr>';
+    updateMetrics(); return;
+  }
+  tbody.innerHTML=invoices.map((inv,i)=>`
+    <tr>
+      <td title="${esc(inv.provider)}">${esc(inv.provider)||'—'}</td>
+      <td title="${esc(inv.course)}">${esc(inv.course)||'—'}</td>
+      <td>${fmtDate(inv.invdate)}</td>
+      <td>${fmtDate(inv.subdate)}</td>
+      <td>${fmt(inv.amount)}</td>
+      <td class="participants-cell">${renderParticipantChips(inv.participants)}</td>
+      <td><span class="badge ${statusClass[inv.status]}">${statusLabels[inv.status]}</span></td>
+      <td style="display:flex;gap:4px;align-items:center">
+        <select class="status-select" onchange="changeStatus(${i},this.value)" title="Change status">
+          ${['pending','approved','reimbursed','rejected'].map(s=>`<option value="${s}" ${inv.status===s?'selected':''}>${statusLabels[s]}</option>`).join('')}
+        </select>
+        <button class="del-btn" onclick="deleteInvoice(${i})" title="Delete"><i class="ti ti-trash"></i></button>
+      </td>
+    </tr>
+  `).join('');
+  updateMetrics();
+}
+
+function changeStatus(i,val){ invoices[i].status=val; persist(); render(); }
+function deleteInvoice(i){ if(confirm('Remove this invoice?')){ invoices.splice(i,1); persist(); render(); } }
+
+function addParticipant(prefix){
+  const nameEl=document.getElementById(prefix+'-pname');
+  const deptEl=document.getElementById(prefix+'-pdept');
+  const name=nameEl.value.trim();
+  const dept=deptEl.value.trim();
+  if(!name){ nameEl.focus(); return; }
+  tempParticipants[prefix].push({name, dept:dept||'—'});
+  nameEl.value=''; deptEl.value=''; nameEl.focus();
+  renderTempParticipants(prefix);
+}
+
+function removeParticipant(prefix, idx){
+  tempParticipants[prefix].splice(idx,1);
+  renderTempParticipants(prefix);
+}
+
+function renderTempParticipants(prefix){
+  const list=document.getElementById(prefix+'-plist');
+  if(!tempParticipants[prefix].length){
+    list.innerHTML='<span class="p-empty">No participants added yet</span>'; return;
+  }
+  list.innerHTML=tempParticipants[prefix].map((p,i)=>`
+    <span class="p-chip">
+      ${esc(p.name)} <span class="dept-tag">${esc(p.dept)}</span>
+      <button class="p-chip-remove" onclick="removeParticipant('${prefix}',${i})" title="Remove"><i class="ti ti-x" style="font-size:12px"></i></button>
+    </span>
+  `).join('');
+}
+
+function clearParticipants(prefix){
+  tempParticipants[prefix]=[];
+  renderTempParticipants(prefix);
+}
+
+function openUpload(){
+  document.getElementById('upload-modal').classList.add('open');
+  document.getElementById('upload-form').style.display='none';
+  document.getElementById('upload-save-btn').style.display='none';
+  document.getElementById('ai-status').style.display='none';
+  document.getElementById('preview-img').style.display='none';
+  document.getElementById('drop-zone').style.display='block';
+  document.getElementById('file-input').value='';
+  clearParticipants('u');
+}
+function closeUpload(){ document.getElementById('upload-modal').classList.remove('open'); }
+
+function openManual(){
+  document.getElementById('mm-invdate').value=today();
+  document.getElementById('mm-subdate').value=today();
+  ['mm-provider','mm-course','mm-amount'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('mm-status').value='pending';
+  clearParticipants('mm');
+  document.getElementById('manual-modal').classList.add('open');
+}
+function closeManual(){ document.getElementById('manual-modal').classList.remove('open'); }
+
+function saveManual(){
+  const provider=document.getElementById('mm-provider').value.trim();
+  const course=document.getElementById('mm-course').value.trim();
+  if(!provider||!course){ alert('Please fill in provider and course name.'); return; }
+  invoices.unshift({
+    provider, course,
+    invdate:document.getElementById('mm-invdate').value,
+    subdate:document.getElementById('mm-subdate').value,
+    amount:parseFloat(document.getElementById('mm-amount').value)||0,
+    status:document.getElementById('mm-status').value,
+    participants:[...tempParticipants['mm']],
+    id:Date.now()
+  });
+  persist(); render(); closeManual();
+}
+
+async function handleFile(file){
+  if(!file) return;
+  const isPDF=file.type==='application/pdf';
+  const isImg=file.type.startsWith('image/');
+  if(!isPDF&&!isImg){ alert('Please upload a PDF or image file.'); return; }
+  document.getElementById('drop-zone').style.display='none';
+  document.getElementById('upload-form').style.display='none';
+  document.getElementById('upload-save-btn').style.display='none';
+  if(isImg){
+    const url=URL.createObjectURL(file);
+    const img=document.getElementById('preview-img');
+    img.src=url; img.style.display='block';
+  }
+  document.getElementById('ai-status').style.display='flex';
+  document.getElementById('ai-status-text').textContent='Reading invoice with AI…';
+  const base64=await fileToBase64(file);
+  const messages=[{role:'user',content:isPDF?[
+    {type:'document',source:{type:'base64',media_type:'application/pdf',data:base64}},
+    {type:'text',text:'Extract from this invoice: training provider name, course/training name, invoice date, and total amount. Return ONLY a JSON object with keys: provider, course, date (YYYY-MM-DD or empty string), amount (number, no currency symbol). No extra text.'}
+  ]:[
+    {type:'image',source:{type:'base64',media_type:file.type,data:base64}},
+    {type:'text',text:'Extract from this invoice image: training provider name, course/training name, invoice date, and total amount. Return ONLY a JSON object with keys: provider, course, date (YYYY-MM-DD or empty string), amount (number, no currency symbol). No extra text.'}
+  ]}];
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages})});
+    const data=await res.json();
+    const raw=data.content.filter(b=>b.type==='text').map(b=>b.text).join('');
+    const parsed=JSON.parse(raw.replace(/```json|```/g,'').trim());
+    document.getElementById('ai-status').style.display='none';
+    document.getElementById('upload-form').style.display='block';
+    document.getElementById('upload-save-btn').style.display='inline-block';
+    document.getElementById('u-provider').value=parsed.provider||'';
+    document.getElementById('u-course').value=parsed.course||'';
+    document.getElementById('u-invdate').value=parsed.date||today();
+    document.getElementById('u-subdate').value=today();
+    document.getElementById('u-amount').value=parsed.amount||'';
+    document.getElementById('u-status').value='pending';
+  }catch(e){
+    document.getElementById('ai-status-text').textContent='Could not read invoice — please fill in the fields below.';
+    document.getElementById('upload-form').style.display='block';
+    document.getElementById('upload-save-btn').style.display='inline-block';
+    document.getElementById('u-invdate').value=today();
+    document.getElementById('u-subdate').value=today();
+  }
+}
+
+function saveUpload(){
+  const provider=document.getElementById('u-provider').value.trim();
+  const course=document.getElementById('u-course').value.trim();
+  if(!provider||!course){ alert('Please fill in provider and course name.'); return; }
+  invoices.unshift({
+    provider, course,
+    invdate:document.getElementById('u-invdate').value,
+    subdate:document.getElementById('u-subdate').value,
+    amount:parseFloat(document.getElementById('u-amount').value)||0,
+    status:document.getElementById('u-status').value,
+    participants:[...tempParticipants['u']],
+    id:Date.now()
+  });
+  persist(); render(); closeUpload();
+}
+
+function fileToBase64(file){
+  return new Promise((res,rej)=>{
+    const r=new FileReader();
+    r.onload=()=>res(r.result.split(',')[1]);
+    r.onerror=()=>rej(new Error('Read failed'));
+    r.readAsDataURL(file);
+  });
+}
+
+function exportCSV(){
+  const rows=[['Provider','Course','Invoice Date','Submitted to Finance','Amount (SGD)','Participants','Status']];
+  invoices.forEach(inv=>{
+    const pStr=(inv.participants||[]).map(p=>p.name+(p.dept&&p.dept!=='—'?' ('+p.dept+')':'')).join('; ');
+    rows.push([inv.provider,inv.course,fmtDate(inv.invdate),fmtDate(inv.subdate),Number(inv.amount).toFixed(2),pStr,statusLabels[inv.status]]);
+  });
+  const csv=rows.map(r=>r.map(c=>'"'+String(c||'').replace(/"/g,'""')+'"').join(',')).join('\n');
+  const a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
+  a.download='training_invoices.csv';
+  a.click();
+}
+
+const dz=document.getElementById('drop-zone');
+dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('drag')});
+dz.addEventListener('dragleave',()=>dz.classList.remove('drag'));
+dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('drag');handleFile(e.dataTransfer.files[0])});
+document.getElementById('upload-modal').addEventListener('click',function(e){if(e.target===this)closeUpload()});
+document.getElementById('manual-modal').addEventListener('click',function(e){if(e.target===this)closeManual()});
+
+render();
+</script>
+</body>
+</html>
